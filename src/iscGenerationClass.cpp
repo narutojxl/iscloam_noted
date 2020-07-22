@@ -55,6 +55,7 @@ void ISCGenerationClass::print_param(){
     std::cout << "maximum distance:\t"<<max_dis<<std::endl;
 }
 
+//构建当前帧的intensity scan context
 ISCDescriptor ISCGenerationClass::calculate_isc(const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_pointcloud){
     ISCDescriptor isc = cv::Mat::zeros(cv::Size(sectors,rings), CV_8U);
 
@@ -75,7 +76,7 @@ ISCDescriptor ISCGenerationClass::calculate_isc(const pcl::PointCloud<pcl::Point
 #else
         int intensity_temp = (int) (filtered_pointcloud->points[i].intensity);
 #endif
-        if(isc.at<unsigned char>(ring_id,sector_id)<intensity_temp)
+        if(isc.at<unsigned char>(ring_id,sector_id)<intensity_temp) //ISC的每个像素是：属于这个扇形的points的最大强度值
             isc.at<unsigned char>(ring_id,sector_id)=intensity_temp;
 
     }
@@ -105,8 +106,11 @@ ISCDescriptor ISCGenerationClass::getLastISCRGB(void){
 void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Ptr& current_pc, Eigen::Isometry3d& odom){
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr pc_filtered(new pcl::PointCloud<pcl::PointXYZI>());
+
     ground_filter(current_pc, pc_filtered);
+
     ISCDescriptor desc = calculate_isc(pc_filtered);
+
     Eigen::Vector3d current_t = odom.translation();
     //dont change push_back sequence
     if(travel_distance_arr.size()==0){
@@ -116,10 +120,11 @@ void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Pt
         travel_distance_arr.push_back(dis_temp);
     }
     pos_arr.push_back(current_t);
-    isc_arr.push_back(desc);
+    isc_arr.push_back(desc); //所有帧的isc
 
     current_frame_id = pos_arr.size()-1;
-    matched_frame_id.clear();
+    matched_frame_id.clear(); //只有一个内容，或者没有
+
     //search for the near neibourgh pos
     int best_matched_id=0;
     double best_score=0.0;
@@ -129,7 +134,7 @@ void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Pt
         if(delta_travel_distance > SKIP_NEIBOUR_DISTANCE && pos_distance<delta_travel_distance*INFLATION_COVARIANCE){
             double geo_score=0;
             double inten_score =0;
-            if(is_loop_pair(desc,isc_arr[i],geo_score,inten_score)){
+            if(is_loop_pair(desc, isc_arr[i], geo_score, inten_score)){//找到当前帧与历史所有帧中最相似的那个id号
                 if(geo_score+inten_score>best_score){
                     best_score = geo_score+inten_score;
                     best_matched_id = i;
@@ -142,8 +147,6 @@ void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Pt
         matched_frame_id.push_back(best_matched_id);
         //ROS_INFO("received loop closure candidate: current: %d, history %d, total_score%f",current_frame_id,best_matched_id,best_score);
     }
-
-
 }
 
 bool ISCGenerationClass::is_loop_pair(ISCDescriptor& desc1, ISCDescriptor& desc2, double& geo_score, double& inten_score){
@@ -158,17 +161,21 @@ bool ISCGenerationClass::is_loop_pair(ISCDescriptor& desc1, ISCDescriptor& desc2
     return false;
 }
 
+//返回分数：两帧isc，相同项的个数
+//desc1: 当前帧isc
+//desc2: 历史帧isc
+//angle: 历史帧水平旋转量
 double ISCGenerationClass::calculate_geometry_dis(const ISCDescriptor& desc1, const ISCDescriptor& desc2, int& angle){
     double similarity = 0.0;
 
-    for(int i=0;i<sectors;i++){
+    for(int i=0;i<sectors;i++){//isc列平移量
         int match_count=0;
         for(int p=0;p<sectors;p++){
             int new_col = p+i>=sectors?p+i-sectors:p+i;
             for(int q=0;q<rings;q++){
                 if((desc1.at<unsigned char>(q,p)== true && desc2.at<unsigned char>(q,new_col)== true) || (desc1.at<unsigned char>(q,p)== false && desc2.at<unsigned char>(q,new_col)== false)){
-                    match_count++;
-                }
+                    match_count++; //异或运算中，个数： [null, null] +  [not null, not null]
+                }//扇形内有点为true， 否则为false
 
             }
         }
@@ -181,6 +188,8 @@ double ISCGenerationClass::calculate_geometry_dis(const ISCDescriptor& desc1, co
     return similarity/(sectors*rings);
     
 }
+
+
 double ISCGenerationClass::calculate_intensity_dis(const ISCDescriptor& desc1, const ISCDescriptor& desc2, int& angle){
     double difference = 1.0;
     double angle_temp = angle;
@@ -195,7 +204,7 @@ double ISCGenerationClass::calculate_intensity_dis(const ISCDescriptor& desc1, c
             if(new_col<0)
                 new_col = new_col+sectors;
             for(int q=0;q<rings;q++){
-                    match_count += abs(desc1.at<unsigned char>(q,p)-desc2.at<unsigned char>(q,new_col));
+                    match_count += abs(desc1.at<unsigned char>(q,p)-desc2.at<unsigned char>(q,new_col)); //取fab(对应扇形强度值之差)，和论文不一致
                     total_points++;
             }
             
@@ -208,6 +217,7 @@ double ISCGenerationClass::calculate_intensity_dis(const ISCDescriptor& desc1, c
     return 1 - difference;
     
 }
+
 void ISCGenerationClass::ground_filter(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_out){
     pcl::PassThrough<pcl::PointXYZI> pass;
     pass.setInputCloud (pc_in);

@@ -64,7 +64,7 @@ void laser_processing(){
 
             std::chrono::time_point<std::chrono::system_clock> start, end;
             start = std::chrono::system_clock::now();
-            laserProcessing.featureExtraction(pointcloud_in,pointcloud_edge,pointcloud_surf);
+            laserProcessing.featureExtraction(pointcloud_in,pointcloud_edge,pointcloud_surf); 
             end = std::chrono::system_clock::now();
             std::chrono::duration<float> elapsed_seconds = end - start;
             total_frame++;
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 
     ros::Subscriber subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/velodyne_points", 100, velodyneHandler);
 
-    pubLaserCloudFiltered = nh.advertise<sensor_msgs::PointCloud2>("/velodyne_points_filtered", 100);
+    pubLaserCloudFiltered = nh.advertise<sensor_msgs::PointCloud2>("/velodyne_points_filtered", 100); //edge + surf
 
     pubEdgePoints = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_edge", 100);
 

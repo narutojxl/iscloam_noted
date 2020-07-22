@@ -80,9 +80,9 @@ void loop_closure_detection(){
             }
 
             pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_in(new pcl::PointCloud<pcl::PointXYZI>());
-            pcl::fromROSMsg(*pointCloudBuf.front(), *pointcloud_in);
+            pcl::fromROSMsg(*pointCloudBuf.front(), *pointcloud_in); //每一帧的点云
             ros::Time pointcloud_time = (pointCloudBuf.front())->header.stamp;
-            Eigen::Isometry3d odom_in = Eigen::Isometry3d::Identity();
+            Eigen::Isometry3d odom_in = Eigen::Isometry3d::Identity(); //每一帧位姿
             odom_in.rotate(Eigen::Quaterniond(odometryBuf.front()->pose.pose.orientation.w,odometryBuf.front()->pose.pose.orientation.x,odometryBuf.front()->pose.pose.orientation.y,odometryBuf.front()->pose.pose.orientation.z));  
             odom_in.pretranslate(Eigen::Vector3d(odometryBuf.front()->pose.pose.position.x,odometryBuf.front()->pose.pose.position.y,odometryBuf.front()->pose.pose.position.z));
             odometryBuf.pop();
@@ -90,16 +90,16 @@ void loop_closure_detection(){
             mutex_lock.unlock();
 
 
-            iscGeneration.loopDetection(pointcloud_in, odom_in);
+            iscGeneration.loopDetection(pointcloud_in, odom_in); //闭环检测
 
             cv_bridge::CvImage out_msg;
             out_msg.header.frame_id  = "velodyne"; 
             out_msg.header.stamp  = pointcloud_time; 
             out_msg.encoding = sensor_msgs::image_encodings::RGB8; 
-            out_msg.image    = iscGeneration.getLastISCRGB(); 
+            out_msg.image    = iscGeneration.getLastISCRGB(); //当前帧isc对应的图像
             isc_pub.publish(out_msg.toImageMsg());
             
-            iscloam::LoopInfo loop;
+            iscloam::LoopInfo loop; //跳出while循环前不会释放
             loop.header.stamp = pointcloud_time;
             loop.header.frame_id = "velodyne";
             loop.current_id = iscGeneration.current_frame_id;

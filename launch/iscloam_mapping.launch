@@ -7,10 +7,10 @@
     <param name="/use_sim_time" value="true" />
     <param name="scan_period" value="0.1" />
     <param name="scan_line" value="16" /> <!--default:64-->
-    <param name="ring_height" type="int" value="20" />
-    <param name="ring_width" type="int" value="60" />
-    <param name="vertical_angle" type="double" value="2.0" />
-    <param name="max_dis" type="double" value="90.0" />
+    <param name="ring_height" type="int" value="20" /> <!--max_dis均等20份-->
+    <param name="ring_width" type="int" value="60" />  <!--360度均等60份-->
+    <param name="vertical_angle" type="double" value="2.0" /> <!--雷达竖直角分辨率-->
+    <param name="max_dis" type="double" value="50.0" />  <!--default: 90.0-->
     <param name="min_dis" type="double" value="3.0" />
     <!--- -->
     <node pkg="iscloam" type="iscloam_odom_estimation_node" name="iscloam_odom_estimation_node" output="screen"/>

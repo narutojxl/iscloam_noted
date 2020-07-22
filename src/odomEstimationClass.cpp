@@ -5,6 +5,7 @@
 #include "odomEstimationClass.h"
 
 void OdomEstimationClass::init(lidar::Lidar lidar_param){
+
     //init local map
     laserCloudCornerMap = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>());
     laserCloudSurfMap = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>());
@@ -29,10 +30,11 @@ void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI
 }
 
 
+//直接和局部地图(corner to corner, surf to surf)匹配，没有相邻两帧间的匹配
 void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in){
 
     if(optimization_count>2)
-        optimization_count--;
+        optimization_count--; //default： 自减，后面的匹配只会迭代2次 
 
     Eigen::Isometry3d odom_prediction = odom * (last_odom.inverse() * odom);
     last_odom = odom;
@@ -49,7 +51,7 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
         kdtreeEdgeMap->setInputCloud(laserCloudCornerMap);
         kdtreeSurfMap->setInputCloud(laserCloudSurfMap);
 
-        for (int iterCount = 0; iterCount < optimization_count; iterCount++){
+        for (int iterCount = 0; iterCount < optimization_count; iterCount++){ //后面迭代2次(optimization_count=2)
             ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
             ceres::Problem::Options problem_options;
             ceres::Problem problem(problem_options);
@@ -74,7 +76,7 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
         printf("not enough points in map to associate, map error");
     }
     odom = Eigen::Isometry3d::Identity();
-    odom.linear() = q_w_curr.toRotationMatrix();
+    odom.linear() = q_w_curr.toRotationMatrix(); //头文件中将q_w_curr，t_w_curr与parameters绑定
     odom.translation() = t_w_curr;
     addPointsToMap(downsampledEdgeCloud,downsampledSurfCloud);
 
@@ -243,9 +245,9 @@ void OdomEstimationClass::addPointsToMap(const pcl::PointCloud<pcl::PointXYZI>::
     cropBoxFilter.filter(*tmpCorner);
 
     downSizeFilterEdge.setInputCloud(tmpSurf);
-    downSizeFilterEdge.filter(*laserCloudSurfMap);
+    downSizeFilterEdge.filter(*laserCloudSurfMap); //局部地图surf
     downSizeFilterSurf.setInputCloud(tmpCorner);
-    downSizeFilterSurf.filter(*laserCloudCornerMap);
+    downSizeFilterSurf.filter(*laserCloudCornerMap); //局部地图corner
 
 }
 

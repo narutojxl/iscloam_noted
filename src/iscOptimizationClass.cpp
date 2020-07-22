@@ -21,6 +21,7 @@ void ISCOptimizationClass::init(void){
 
     //loop noise model
     loopModel = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(6) << 0.10, 0.10, 0.10, 0.10, 0.10, 0.10).finished());
+    
     //attention, here is x y z r p y order
     stop_check_loop_count=0;
     

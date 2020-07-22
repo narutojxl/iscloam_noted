@@ -40,12 +40,13 @@
 
 //IF TRAVELLED DISTANCE IS LESS THAN THIS VALUE, SKIP FOR PLACE RECOGNTION
 #define SKIP_NEIBOUR_DISTANCE 20.0
+
 //how much error will odom generate per frame 
 #define INFLATION_COVARIANCE 0.03
 
 //define threshold for loop closure detection
-#define GEOMETRY_THRESHOLD 0.67
-#define INTENSITY_THRESHOLD 0.91
+#define GEOMETRY_THRESHOLD 0.67   //大于该阈值才有可能是
+#define INTENSITY_THRESHOLD 0.91  //大于该阈值才有可能是
 
 typedef cv::Mat ISCDescriptor; 
 
@@ -77,7 +78,7 @@ class ISCGenerationClass
 
         std::vector<Eigen::Vector3d> pos_arr;
         std::vector<double> travel_distance_arr;
-        std::vector<ISCDescriptor> isc_arr;
+        std::vector<ISCDescriptor> isc_arr; 
 
         void init_color(void);
         void print_param(void);

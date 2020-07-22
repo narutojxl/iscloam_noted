@@ -51,8 +51,9 @@ Eigen::Isometry3d w_odom_curr= Eigen::Isometry3d::Identity();
 nav_msgs::Path path_optimized;
 int current_frame_id;
 std::vector<int> matched_frame_id;
+
 //receive odomtry
-void odomCallback(const nav_msgs::Odometry::ConstPtr &msg)
+void odomCallback(const nav_msgs::Odometry::ConstPtr &msg)//当前帧在map下位姿
 {
     mutex_lock.lock();
     odometryBuf.push(msg);
@@ -62,7 +63,7 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr &msg)
     Eigen::Isometry3d odom_to_base= Eigen::Isometry3d::Identity();
     odom_to_base.rotate(Eigen::Quaterniond(msg->pose.pose.orientation.w,msg->pose.pose.orientation.x,msg->pose.pose.orientation.y,msg->pose.pose.orientation.z));  
     odom_to_base.pretranslate(Eigen::Vector3d(msg->pose.pose.position.x,msg->pose.pose.position.y,msg->pose.pose.position.z));
-    Eigen::Isometry3d w_curr = w_odom_curr*odom_to_base;
+    Eigen::Isometry3d w_curr = w_odom_curr*odom_to_base; //TODO w_odom_curr ???
     Eigen::Quaterniond q_temp(w_curr.rotation());
 
     static tf::TransformBroadcaster br_realtime;
@@ -148,14 +149,14 @@ void global_optimization(){
 
             pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_edge_in(new pcl::PointCloud<pcl::PointXYZI>());
             pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_surf_in(new pcl::PointCloud<pcl::PointXYZI>());
-            pcl::fromROSMsg(*pointCloudEdgeBuf.front(), *pointcloud_edge_in);
-            pcl::fromROSMsg(*pointCloudSurfBuf.front(), *pointcloud_surf_in);
+            pcl::fromROSMsg(*pointCloudEdgeBuf.front(), *pointcloud_edge_in); //当前帧corner
+            pcl::fromROSMsg(*pointCloudSurfBuf.front(), *pointcloud_surf_in); //当前帧surf
             ros::Time pointcloud_time = (odometryBuf.front())->header.stamp;
-            Eigen::Isometry3d odom_in = Eigen::Isometry3d::Identity();
+            Eigen::Isometry3d odom_in = Eigen::Isometry3d::Identity(); //当前帧在map下位姿
             odom_in.rotate(Eigen::Quaterniond(odometryBuf.front()->pose.pose.orientation.w,odometryBuf.front()->pose.pose.orientation.x,odometryBuf.front()->pose.pose.orientation.y,odometryBuf.front()->pose.pose.orientation.z));  
             odom_in.pretranslate(Eigen::Vector3d(odometryBuf.front()->pose.pose.position.x,odometryBuf.front()->pose.pose.position.y,odometryBuf.front()->pose.pose.position.z));
             current_frame_id = loopInfoBuf.front()->current_id;
-            matched_frame_id.clear();
+            matched_frame_id.clear(); //只有一个内容，或者没有
             for(int i=0;i<(int)loopInfoBuf.front()->matched_id.size();i++){
                 matched_frame_id.push_back(loopInfoBuf.front()->matched_id[i]);
             }
@@ -168,7 +169,7 @@ void global_optimization(){
             if(current_frame_id!= (int)iscOptimization.pointcloud_surf_arr.size()){
                 ROS_WARN_ONCE("graph optimization frame not aligned,pls check your data");
             }
-            if(iscOptimization.addPoseToGraph(pointcloud_edge_in, pointcloud_surf_in,matched_frame_id, odom_in)){
+            if(iscOptimization.addPoseToGraph(pointcloud_edge_in, pointcloud_surf_in, matched_frame_id, odom_in)){
                 //update path
                 path_optimized.poses.clear();
                 for(int i=0;i<(int)iscOptimization.pointcloud_surf_arr.size()-1;i++){
