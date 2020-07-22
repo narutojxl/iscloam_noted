@@ -45,8 +45,10 @@
 #include "lidarOptimization.h"
 
 #define LOOPCLOSURE_THRESHOLD 41
+
 //stop loop check for the next N frames if loop is identified
 #define STOP_LOOP_CHECK_COUNTER 40
+
 class ISCOptimizationClass
 {
     public:
