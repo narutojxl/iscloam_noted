@@ -23,14 +23,16 @@ void LaserMappingClass::init(void){
 	origin_in_map_x = LASER_CELL_RANGE_HORIZONTAL;
 	origin_in_map_y = LASER_CELL_RANGE_HORIZONTAL;
 	origin_in_map_z = LASER_CELL_RANGE_VERTICAL;
+
 	map_width = LASER_CELL_RANGE_HORIZONTAL*2+1;
 	map_height = LASER_CELL_RANGE_HORIZONTAL*2+1;
 	map_depth = LASER_CELL_RANGE_HORIZONTAL*2+1;
 
 	//downsampling size
-	downSizeFilter.setLeafSize(1.0, 1.0, 1.0);
+	downSizeFilter.setLeafSize(0.5, 0.5, 0.5);  //default: 1.0, 1.0, 1.0
 	last_pose = Eigen::Isometry3d::Identity();
 }
+
 
 void LaserMappingClass::addWidthCellNegative(void){
 	std::vector<std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>> map_height_temp;
@@ -47,6 +49,7 @@ void LaserMappingClass::addWidthCellNegative(void){
 	origin_in_map_x++;
 	map_width++;
 }
+
 void LaserMappingClass::addWidthCellPositive(void){
 	std::vector<std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>> map_height_temp;
 	for(int j=0; j < map_height;j++){
@@ -60,6 +63,7 @@ void LaserMappingClass::addWidthCellPositive(void){
 	map.push_back(map_height_temp);
 	map_width++;
 }
+
 void LaserMappingClass::addHeightCellNegative(void){
 	for(int i=0; i < map_width;i++){
 		std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> map_depth_temp;
@@ -72,6 +76,7 @@ void LaserMappingClass::addHeightCellNegative(void){
 	origin_in_map_y++;
 	map_height++;
 }
+
 void LaserMappingClass::addHeightCellPositive(void){
 	for(int i=0; i < map_width;i++){
 		std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> map_depth_temp;
@@ -83,6 +88,7 @@ void LaserMappingClass::addHeightCellPositive(void){
 	}
 	map_height++;
 }
+
 void LaserMappingClass::addDepthCellNegative(void){
 	for(int i=0; i < map_width;i++){
 		for(int j=0;j< map_height;j++){
@@ -93,6 +99,7 @@ void LaserMappingClass::addDepthCellNegative(void){
 	origin_in_map_z++;
 	map_depth++;
 }
+
 void LaserMappingClass::addDepthCellPositive(void){
 	for(int i=0; i < map_width;i++){
 		for(int j=0;j< map_height;j++){
@@ -192,7 +199,9 @@ void LaserMappingClass::resetMap(std::vector<Eigen::Isometry3d>& path){
 	last_pose = path[path.size()-1];
 }
 
-//update points to map 
+//update points to map
+//@param pc_in: 在当前帧下的corner + surf  
+//@param pose_current: path中最后一帧位姿，也就是当前帧位姿
 void LaserMappingClass::updateCurrentPointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, const Eigen::Isometry3d& pose_current){
 	
 	int currentPosIdX = int(std::floor(pose_current.translation().x() / LASER_CELL_WIDTH + 0.5)) + origin_in_map_x;

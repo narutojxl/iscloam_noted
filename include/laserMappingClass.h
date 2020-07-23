@@ -23,14 +23,15 @@
 #include <vector>
 
 
-#define LASER_CELL_WIDTH 50.0
-#define LASER_CELL_HEIGHT 50.0
-#define LASER_CELL_DEPTH 50.0
+#define LASER_CELL_WIDTH 10.0  //default: 50.0 
+#define LASER_CELL_HEIGHT 10.0 //default: 50.0 
+#define LASER_CELL_DEPTH 10.0  //default: 50.0 
 
 //separate map as many sub point clouds
+#define LASER_CELL_RANGE_HORIZONTAL 10  //default: 2 
+#define LASER_CELL_RANGE_VERTICAL  10   //default: 2
 
-#define LASER_CELL_RANGE_HORIZONTAL 2
-#define LASER_CELL_RANGE_VERTICAL 2
+//上面这两类参数和downSizeFilter.setLeafSize(0.5, 0.5, 0.5); 设置之间有影响，设置的不好的话，程序一运行就crash
 
 
 class LaserMappingClass 

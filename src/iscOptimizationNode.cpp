@@ -193,7 +193,7 @@ void global_optimization(){
 
             path_optimized.header.seq = (int)iscOptimization.pointcloud_surf_arr.size();
             path_optimized.header.stamp = pointcloud_time;
-            Eigen::Isometry3d pose_current = iscOptimization.getLastPose(); //当前帧的位姿
+            Eigen::Isometry3d pose_current = iscOptimization.getLastPose(); //当前帧的位姿, TODO: 打印发现该位姿与上面最后一个位姿不是同一个，why？
             Eigen::Quaterniond q_current(pose_current.rotation());
             Eigen::Vector3d t_current = pose_current.translation();
             w_odom_curr = pose_current * odom_in.inverse(); //w_odom_curr: 由于加进来的闭环约束，导致对当前帧的correction delta transform

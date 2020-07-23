@@ -17,7 +17,7 @@
     <node pkg="iscloam" type="iscloam_laser_processing_node" name="iscloam_laser_processing_node" output="screen"/>
     <node pkg="iscloam" type="iscloam_isc_generation_node" name="iscloam_isc_generation_node" output="screen"/>
     <node pkg="iscloam" type="iscloam_isc_optimization_node" name="iscloam_isc_optimization_node" output="screen"/>
-    <node pkg="iscloam" type="iscloam_laser_mapping_node" name="iscloam_laser_mapping_node" output="screen"/>
+    <!--node pkg="iscloam" type="iscloam_laser_mapping_node" name="iscloam_laser_mapping_node" output="screen"/-->
 
     <node pkg="tf" type="static_transform_publisher" name="word2map_tf"  args="0 0 0 0 0 0 /world /map 10" />
 

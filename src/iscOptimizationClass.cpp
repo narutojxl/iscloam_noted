@@ -41,7 +41,7 @@ bool ISCOptimizationClass::addPoseToGraph(const pcl::PointCloud<pcl::PointXYZI>:
         //if first time 
         pose_optimized_arr.push_back(pose3_current);
         graph.push_back(gtsam::PriorFactor<gtsam::Pose3>(gtsam::Symbol('x', 1), pose_optimized_arr.front(), priorModel));   
-        initials.insert(gtsam::Symbol('x', 1), pose_optimized_arr.back()); //id: 作者这是从1开始
+        initials.insert(gtsam::Symbol('x', 1), pose_optimized_arr.back()); //id: 作者这里的gtsam是从1开始标号
         last_pose3 = pose3_current;
         return false;
     }
@@ -57,8 +57,10 @@ bool ISCOptimizationClass::addPoseToGraph(const pcl::PointCloud<pcl::PointXYZI>:
         stop_check_loop_count--;
         return false;
     }
-
-	if(matched_frame_id.size()!=0){ //检测到闭环，个数应该为1
+   
+    
+	if(matched_frame_id.size()!=0){ //检测到闭环，个数为1
+        // ROS_INFO("Matched_frame size: %d", matched_frame_id.size());  //实际数据测试发现，即使回到经过的地方，回环检测有时检测不到
 		//if loop closure detected
 		for(int i=0;i<(int)matched_frame_id.size();i++){
             //get initial guess
@@ -75,22 +77,24 @@ bool ISCOptimizationClass::addPoseToGraph(const pcl::PointCloud<pcl::PointXYZI>:
                 gtsam::Pose3 loop_temp = eigenToPose3(transform);
 
                 //把计算的闭环约束加入到gtsam中
-                graph.push_back(gtsam::BetweenFactor<gtsam::Pose3>(gtsam::Symbol('x', matched_frame_id[i]+1), //TODO： matched_frame_id[i]
-                                                                   gtsam::Symbol('x', pointcloud_edge_arr.size()), //TODO: pointcloud_edge_arr.size()-1
+                graph.push_back(gtsam::BetweenFactor<gtsam::Pose3>(gtsam::Symbol('x', matched_frame_id[i]+1), 
+                                                                   gtsam::Symbol('x', pointcloud_edge_arr.size()),
                                                                    loop_temp, loopModel));
 
                 gtsam::Values result = gtsam::LevenbergMarquardtOptimizer(graph, initials).optimize();
 
                 if(updateStates(result, matched_frame_id[i], pointcloud_edge_arr.size()-1)){
                     stop_check_loop_count=STOP_LOOP_CHECK_COUNTER; //40
-                    ROS_WARN("global optimization finished%d,%d with tranform %f,%f,%f, [%f,%f,%f,%f]",pointcloud_edge_arr.size()-1, matched_frame_id[i],loop_temp.translation().x(),loop_temp.translation().y(),loop_temp.translation().z(),loop_temp.rotation().toQuaternion().w(),loop_temp.rotation().toQuaternion().x(),loop_temp.rotation().toQuaternion().y(),loop_temp.rotation().toQuaternion().z());
+                    ROS_WARN("global optimization finished (%d,%d) with tranform (%f,%f,%f, [%f,%f,%f,%f])",pointcloud_edge_arr.size()-1, matched_frame_id[i],loop_temp.translation().x(),loop_temp.translation().y(),loop_temp.translation().z(),loop_temp.rotation().toQuaternion().w(),loop_temp.rotation().toQuaternion().x(),loop_temp.rotation().toQuaternion().y(),loop_temp.rotation().toQuaternion().z());
                     return true;
                 }else{
                     stop_check_loop_count=2;
                 }
+                ROS_WARN("True loop between curr %d and history %d", pointcloud_edge_arr.size()-1,  matched_frame_id[i]);
 
 			}else{
                 stop_check_loop_count=2;
+                ROS_ERROR("False true loop between curr %d and history %d", pointcloud_edge_arr.size()-1,  matched_frame_id[i]);
             }
 		}
 	}

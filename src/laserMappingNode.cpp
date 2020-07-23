@@ -77,9 +77,9 @@ void laser_mapping(){
 
             //if time aligned 
             pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_in(new pcl::PointCloud<pcl::PointXYZI>());
-            pcl::fromROSMsg(*pointCloudBuf.front(), *pointcloud_in);
+            pcl::fromROSMsg(*pointCloudBuf.front(), *pointcloud_in); //当前帧corner + surf
             ros::Time pointcloud_time = (pointCloudBuf.front())->header.stamp;
-            nav_msgs::Path path = *(pathBuf.front());
+            nav_msgs::Path path = *(pathBuf.front()); //整条轨迹
             pointCloudBuf.pop();
             pathBuf.pop();
             mutex_lock.unlock();
@@ -91,17 +91,17 @@ void laser_mapping(){
 
             //check is the path deviates from last path by checking the last odom
             if(path.poses.size()>2){
-                Eigen::Isometry3d pose_temp = geometryToEigen(path.poses[path_size-2]);
-                Eigen::Isometry3d pose_error = laserMapping.last_pose * pose_temp.inverse();
+                Eigen::Isometry3d pose_temp = geometryToEigen(path.poses[path_size-2]); //此刻倒数第2个位姿
+                Eigen::Isometry3d pose_error = laserMapping.last_pose * pose_temp.inverse(); //上一时刻最后一个位姿，也就是此刻倒数第2个位姿
 
                 double translational_error = abs(pose_error.translation().x()) + abs(pose_error.translation().y()) + abs(pose_error.translation().z());
                 if(translational_error>0.1){
                     //if global optimization is applied 
                     std::vector<Eigen::Isometry3d> path_eigen;
-                    for(int i=0;i<path_size-2;i++){
+                    for(int i=0;i<path_size-2;i++){ //[0, 倒数第3个]
                         path_eigen.push_back(geometryToEigen(path.poses[i]));
                     }
-                    laserMapping.resetMap(path_eigen);
+                    laserMapping.resetMap(path_eigen); //diverge发生, reset
                 }
             }
             laserMapping.updateCurrentPointsToMap(pointcloud_in,geometryToEigen(path.poses[path_size-1]));
